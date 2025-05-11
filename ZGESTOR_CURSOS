@@ -12,7 +12,7 @@ DATA: lt_aca           TYPE TABLE OF zacademia_06,
       gv_result        TYPE zacademia_06,
       lv_respuesta     TYPE c,
       alv              TYPE REF TO cl_salv_table,
-      gv_accion        TYPE c LENGTH 20. " ACCI覰 SELECCIONADA BOTON
+      gv_accion        TYPE c LENGTH 20. " ACCI脫N SELECCIONADA BOTON
 
 
 
@@ -137,8 +137,8 @@ FORM insertar_cursos.
   IF sy-subrc <> 0.
     CALL FUNCTION 'POPUP_TO_CONFIRM'
       EXPORTING
-        titlebar              = ' Confirmaci髇'
-        text_question         = '縀L profesor no esta registrado,desea registrarlo?'
+        titlebar              = ' Confirmaci贸n'
+        text_question         = '驴EL profesor no esta registrado,desea registrarlo?'
         text_button_1         = ' SI '
         icon_button_1         = ' NO '
         default_button        = '1'
@@ -153,7 +153,7 @@ FORM insertar_cursos.
       VIA SELECTION-SCREEN
       AND RETURN.
     ELSE.
-      MESSAGE 'Operaci髇 cancelada'  TYPE 'I'.
+      MESSAGE 'Operaci贸n cancelada'  TYPE 'I'.
     ENDIF.
     EXIT.
   ENDIF.
@@ -168,8 +168,8 @@ FORM insertar_cursos.
   IF sy-subrc <> 0.
     CALL FUNCTION 'POPUP_TO_CONFIRM'
       EXPORTING
-        titlebar              = ' Confirmaci髇'
-        text_question         = '縀L alumno no esta registrado,desea registrar el alumno?'
+        titlebar              = ' Confirmaci贸n'
+        text_question         = '驴EL alumno no esta registrado,desea registrar el alumno?'
         text_button_1         = ' SI '
         icon_button_1         = ' NO '
         default_button        = '1'
@@ -184,7 +184,7 @@ FORM insertar_cursos.
       VIA SELECTION-SCREEN
       AND RETURN.
     ELSE.
-      MESSAGE 'Operaci髇 cancelada'  TYPE 'I'.
+      MESSAGE 'Operaci贸n cancelada'  TYPE 'I'.
     ENDIF.
     EXIT.
   ENDIF.
@@ -238,8 +238,8 @@ FORM insertar_cursos.
 *             ).
       CALL FUNCTION 'POPUP_TO_CONFIRM'
         EXPORTING
-          titlebar              = ' Confirmaci髇'
-          text_question         = '緿esea insertar el curso?'
+          titlebar              = ' Confirmaci贸n'
+          text_question         = '驴Desea insertar el curso?'
           text_button_1         = ' SI '
           icon_button_1         = ' NO '
           default_button        = '1'
@@ -253,7 +253,7 @@ FORM insertar_cursos.
         MODIFY zacademia_06 FROM ls_mod_alumnos.
         MESSAGE 'Curso registrado correctamente' TYPE 'S'.
       ELSE.
-        MESSAGE 'Operaci髇 cancelada' TYPE 'A'.
+        MESSAGE 'Operaci贸n cancelada' TYPE 'A'.
       ENDIF.
     ELSE.
       MESSAGE 'EL campo * es obligatorio' TYPE 'E'.
