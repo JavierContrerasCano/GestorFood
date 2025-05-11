@@ -1,0 +1,309 @@
+*&---------------------------------------------------------------------*
+*& Report ZGESTOR_ACADEMIA_06
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zgestor_academia_06.
+DATA: lt_aca           TYPE TABLE OF zacademia_06,
+      ls_academia      LIKE LINE OF lt_aca,
+      ls_mod_alumnos   TYPE zacademia_06,
+      ls_comprobardni  TYPE zalumnos_curso_6,
+      ls_comprobardnip TYPE ztab_profesor_06,
+      gv_result        TYPE zacademia_06,
+      lv_respuesta     TYPE c,
+      alv              TYPE REF TO cl_salv_table,
+      gv_accion        TYPE c LENGTH 20. " ACCIÓN SELECCIONADA BOTON
+
+
+
+SELECTION-SCREEN BEGIN OF BLOCK part1 WITH FRAME TITLE TEXT-000.
+PARAMETERS: r_listar RADIOBUTTON GROUP rad5 USER-COMMAND act DEFAULT 'X',
+            r_intro  RADIOBUTTON GROUP rad5.
+SELECTION-SCREEN END OF BLOCK part1.
+
+
+*SELECTION-SCREEN BEGIN OF BLOCK part5 WITH FRAME TITLE TEXT-005. "LISTBOX
+*PARAMETERS pa_dni   TYPE z_dnia06
+*                    AS LISTBOX VISIBLE LENGTH 20 DEFAULT '26054896P'.
+*SELECTION-SCREEN END OF BLOCK part5.
+SELECTION-SCREEN BEGIN OF BLOCK part2 WITH FRAME TITLE TEXT-001.
+SELECT-OPTIONS:
+         so_dni   FOR ls_academia-dni MODIF ID a,
+         so_dnip   FOR ls_academia-dni MODIF ID a,
+         so_idcur FOR ls_academia-id_curso MODIF ID a,
+         so_nomb  FOR ls_academia-nombre_curso MODIF ID a,
+         so_desc  FOR ls_academia-descripcion MODIF ID a,
+         so_fam   FOR ls_academia-familia_pro MODIF ID a,
+         so_fi    FOR ls_academia-fecha_inicio MODIF ID a,
+         so_fini  FOR ls_academia-fecha_fin MODIF ID a,
+         so_subv  FOR ls_academia-subvencionado MODIF ID a,
+         so_prc   FOR ls_academia-precio_curso MODIF ID a,
+         so_mone  FOR ls_academia-moneda MODIF ID a,
+         so_ticur FOR ls_academia-tipo_curso MODIF ID a,
+         so_nivel FOR ls_academia-nivel MODIF ID a,
+         so_pro   FOR ls_academia-provincia MODIF ID a,
+         so_stado FOR ls_academia-estado MODIF ID a.
+SELECTION-SCREEN END OF BLOCK part2.
+
+SELECTION-SCREEN BEGIN OF BLOCK part3 WITH FRAME TITLE TEXT-002.
+PARAMETERS:
+  pa_dni   TYPE z_dnia06 VISIBLE LENGTH 15 MODIF ID b,
+  pa_dnip  TYPE z_pdni_06 VISIBLE LENGTH 15 MODIF ID b,
+  pa_idcur TYPE zed_idcurso06  VISIBLE LENGTH 15 MODIF ID b.
+SELECTION-SCREEN END OF BLOCK part3.
+
+SELECTION-SCREEN BEGIN OF BLOCK part4 WITH FRAME TITLE TEXT-003.
+PARAMETERS:
+  pa_nomb TYPE zed_nombre_curso06  VISIBLE LENGTH 60 MODIF ID b,
+  pa_desc TYPE zed_descripcion_curso06  VISIBLE LENGTH 60 MODIF ID b,
+  pa_fam  TYPE zed_familia_curso06  AS LISTBOX VISIBLE LENGTH 20 MODIF ID b.
+SELECTION-SCREEN END OF BLOCK part4.
+
+SELECTION-SCREEN BEGIN OF BLOCK part5 WITH FRAME TITLE TEXT-004.
+PARAMETERS:
+  pa_fi    TYPE zed_fechainicio06  VISIBLE LENGTH 15 MODIF ID b,
+  pa_fini  TYPE zed_fechafin06 VISIBLE LENGTH 15 MODIF ID b,
+  pa_subv  TYPE zed_subvencionado06  AS LISTBOX VISIBLE LENGTH 15 MODIF ID b,
+  pa_prc   TYPE zed_precio_curso06 VISIBLE LENGTH 15 MODIF ID b,
+  pa_mone  TYPE zed_moneda06  AS LISTBOX  VISIBLE LENGTH 15 MODIF ID b,
+  pa_ticur TYPE zed_tipo_curso06  AS LISTBOX VISIBLE LENGTH 20 MODIF ID b,
+  pa_nivel TYPE zed_nivel_curso06  AS LISTBOX VISIBLE LENGTH 20 MODIF ID b,
+  pa_pro   TYPE zed_provincia_curso06  AS LISTBOX VISIBLE LENGTH 20 MODIF ID b,
+  pa_stado TYPE zed_estado_curso06  AS LISTBOX VISIBLE LENGTH 20 MODIF ID b.
+SELECTION-SCREEN END OF BLOCK part5.
+
+
+
+SELECTION-SCREEN:
+BEGIN OF BLOCK part6 WITH FRAME TITLE TEXT-000, "PUSH BOTON
+SKIP 1,
+PUSHBUTTON 10(20) TEXT-005 USER-COMMAND mostrar_curso, "BOTON
+SKIP 2,
+PUSHBUTTON 10(20) TEXT-006 USER-COMMAND insertar_curso, "BOTON
+SKIP 3,
+PUSHBUTTON 10(20) TEXT-007 USER-COMMAND volver_menu, "BOTON
+END OF BLOCK part6.
+
+AT SELECTION-SCREEN OUTPUT.
+
+
+  LOOP AT SCREEN.
+    IF r_listar = 'X'.
+      IF screen-group1 = 'B'.
+        screen-active = 0.
+      ENDIF.
+    ELSEIF r_intro = 'X'.
+      IF screen-group1 = 'A'.
+        screen-active = 0.
+      ENDIF.
+    ENDIF.
+    MODIFY SCREEN.
+  ENDLOOP.
+
+
+AT SELECTION-SCREEN.
+
+
+  CASE sy-ucomm.
+    WHEN 'MOSTRAR_CURSO'.
+      PERFORM listar_cursos.
+      LEAVE TO LIST-PROCESSING.
+    WHEN 'INSERTAR_CURSO'.
+      PERFORM insertar_cursos.
+      LEAVE TO LIST-PROCESSING.
+    WHEN 'VOLVER_MENU'.
+      SUBMIT zmonitor_06
+      VIA SELECTION-SCREEN
+      AND RETURN.
+  ENDCASE.
+
+
+START-OF-SELECTION.
+
+
+*  IF r_listar = 'X'.
+*    PERFORM listar_cursos.
+*  ELSEIF r_intro = 'X'.
+*    PERFORM insertar_cursos.
+*  ENDIF.
+
+
+
+FORM insertar_cursos.
+* COMPROBAMOS SI EL PROFRSOR ESTA REGISTRADO, SINO ESTA LO MANDAMOS AL REPORT GESTOR_ALUMNOS
+
+  SELECT SINGLE * FROM ztab_profesor_06 INTO ls_comprobardnip WHERE dni_profesor = pa_dnip.
+
+  IF sy-subrc <> 0.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = ' Confirmación'
+        text_question         = '¿EL profesor no esta registrado,desea registrarlo?'
+        text_button_1         = ' SI '
+        icon_button_1         = ' NO '
+        default_button        = '1'
+        display_cancel_button = 'X'
+      IMPORTING
+        answer                = lv_respuesta
+      EXCEPTIONS
+        text_not_found        = 1.
+
+    IF lv_respuesta = '1'.
+      SUBMIT zgestor_profesor_06
+      VIA SELECTION-SCREEN
+      AND RETURN.
+    ELSE.
+      MESSAGE 'Operación cancelada'  TYPE 'I'.
+    ENDIF.
+    EXIT.
+  ENDIF.
+
+
+
+
+
+* COMPROBAMOS SI EL ALUMNO ESTA REGISTRADO, SINO ESTA LO MANDAMOS AL REPORT GESTOR_ALUMNOS
+  SELECT SINGLE * FROM zalumnos_curso_6 INTO ls_comprobardni WHERE dni = pa_dni.
+
+  IF sy-subrc <> 0.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = ' Confirmación'
+        text_question         = '¿EL alumno no esta registrado,desea registrar el alumno?'
+        text_button_1         = ' SI '
+        icon_button_1         = ' NO '
+        default_button        = '1'
+        display_cancel_button = 'X'
+      IMPORTING
+        answer                = lv_respuesta
+      EXCEPTIONS
+        text_not_found        = 1.
+
+    IF lv_respuesta = '1'.
+      SUBMIT zgestor_alumnos_06
+      VIA SELECTION-SCREEN
+      AND RETURN.
+    ELSE.
+      MESSAGE 'Operación cancelada'  TYPE 'I'.
+    ENDIF.
+    EXIT.
+  ENDIF.
+
+
+* COMPROBAMOS SI EL ALUMNO ESTA REGISTRADO EN ALGUN CURSO CON ESTE PERIODO DE FECHAS
+  SELECT SINGLE *  FROM zacademia_06
+    INTO ls_mod_alumnos
+    WHERE dni = pa_dni
+    AND  ( ( fecha_inicio >= pa_fi AND fecha_fin <= pa_fini )
+    OR   ( fecha_inicio >= pa_fini AND  fecha_fin <= pa_fini ) ).
+
+  IF sy-subrc = 0.
+    MESSAGE 'El alumno ya esta registrado en un curso en estas fechas' TYPE 'I'.
+    EXIT.
+  ENDIF.
+
+*COMPROBAMOS QUE EL ALUMNO ESTA REGISTRADO EN UN CURSO IGUAL
+
+  SELECT SINGLE * FROM zacademia_06 INTO ls_mod_alumnos
+    WHERE dni = pa_dni AND id_curso = pa_idcur.
+
+*  SELECT SINGLE *
+*    FROM zacademia_06
+*    INTO ls_mod_alumnos
+*    WHERE dni = pa_dni.
+
+  IF sy-subrc = 0.
+    MESSAGE 'El alumno ya esta registrado en este curso' TYPE 'I' .
+  ELSE.
+    IF pa_dni IS NOT INITIAL AND pa_idcur IS NOT INITIAL. "IS NOT INITIAL AND pa_fi IS NOT INITIAL AND pa_fini IS NOT INITIAL.
+
+
+*  IF  lv_respuesta = 0.
+*    DATA(ls_nuevo_campo) = VALUE zacademia_06(
+      ls_mod_alumnos-dni = pa_dni.
+      ls_mod_alumnos-dni_profesor = pa_dnip.
+      ls_mod_alumnos-id_curso = pa_idcur.
+      ls_mod_alumnos-nombre_curso = pa_nomb.
+      ls_mod_alumnos-descripcion = pa_desc.
+      ls_mod_alumnos-familia_pro = pa_fam.
+      ls_mod_alumnos-fecha_inicio = pa_fi.
+      ls_mod_alumnos-fecha_fin =  pa_fini.
+      ls_mod_alumnos-subvencionado = pa_subv.
+      ls_mod_alumnos-precio_curso = pa_prc.
+      ls_mod_alumnos-moneda = pa_mone.
+      ls_mod_alumnos-tipo_curso = pa_ticur.
+      ls_mod_alumnos-nivel = pa_nivel.
+      ls_mod_alumnos-provincia = pa_pro.
+      ls_mod_alumnos-estado =  pa_stado.
+*             ).
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          titlebar              = ' Confirmación'
+          text_question         = '¿Desea insertar el curso?'
+          text_button_1         = ' SI '
+          icon_button_1         = ' NO '
+          default_button        = '1'
+          display_cancel_button = 'X'
+        IMPORTING
+          answer                = lv_respuesta
+        EXCEPTIONS
+          text_not_found        = 1.
+
+      IF lv_respuesta = '1'.
+        MODIFY zacademia_06 FROM ls_mod_alumnos.
+        MESSAGE 'Curso registrado correctamente' TYPE 'S'.
+      ELSE.
+        MESSAGE 'Operación cancelada' TYPE 'A'.
+      ENDIF.
+    ELSE.
+      MESSAGE 'EL campo * es obligatorio' TYPE 'E'.
+    ENDIF.
+  ENDIF.
+  CLEAR ls_academia.
+
+ENDFORM.
+FORM listar_cursos.
+  SELECT *
+     FROM zacademia_06
+     INTO TABLE  lt_aca
+     WHERE  dni IN so_dni
+     OR     dni_profesor IN so_dnip
+      OR    id_curso IN so_idcur
+      OR    nombre_curso IN so_nomb
+      OR    descripcion IN so_desc
+      OR    familia_pro IN so_fam
+      OR    fecha_inicio IN so_fi
+      OR    fecha_fin IN   so_fini
+      OR    subvencionado  IN so_subv
+      OR    precio_curso   IN so_prc
+      OR    moneda IN so_mone
+      OR    tipo_curso IN so_ticur
+      OR    nivel IN so_nivel
+      OR    provincia IN so_pro
+      OR    estado IN so_stado.
+
+  IF sy-subrc = 0.
+
+*    LOOP AT lt_aca INTO gv_result.
+*      WRITE: /.
+*      WRITE: / 'DNI:', gv_result-dni,
+*             / 'FECHA_INICIO:', gv_result-fecha_inicio,
+*             / 'FECHA_FIN:', gv_result-fecha_fin,
+*             / 'SUBVENCIONADO', gv_result-subvencionado,
+*             / 'PRECIO_CURSO', gv_result-precio_curso,
+*             / 'MONEDA', gv_result-moneda,
+*             / 'PRESENCIAL', gv_result-presencial,
+*             / 'CURSO_ONLINE', gv_result-curso_online.
+*      WRITE: /.
+*      WRITE: /.
+*      WRITE: /.
+*    ENDLOOP.
+
+    cl_salv_table=>factory( IMPORTING r_salv_table = alv
+                            CHANGING t_table = lt_aca ).
+    alv->display( ).
+  ELSE.
+    MESSAGE 'No se encontraron datos en la tabla' TYPE 'I'.
+  ENDIF.
+
+ENDFORM.
